@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced AI Competition Quiz</title>
+<style>
+  :root {
+    --bg: #070819; --panel: #121326; --panel2: #1b1327; --border: #492568;
+    --purple: #c77dff; --text: #f7f5ff; --muted: #b9bdd1;
+    --green: #42d6a4; --red: #ff6b83; --yellow: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: radial-gradient(ellipse at top left, #21112f 0, transparent 36%), var(--bg);
+  }
+  .wrap { width: min(1100px, 94%); margin: 0 auto; padding: 28px 0 44px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .logo { display:grid; place-items:center; width:48px;height:48px;border:1px solid var(--border);border-radius:15px;background:#241633;font-size:25px; }
+  h1 { font-size: clamp(1.35rem, 3vw, 2rem); margin:0; letter-spacing:-.03em; }
+  .subtitle { color:var(--muted); margin:5px 0 0; font-size:.92rem; }
+  .timer { border:1px solid var(--border); background:var(--panel2); padding:11px 16px; border-radius:13px; min-width:130px; text-align:center; }
+  .timer small { display:block; color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; }
+  #time { font-size:1.45rem; font-weight:800; font-variant-numeric:tabular-nums; }
+  #time.warning { color:var(--red); }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
+  .stat { background:rgba(18,19,38,.9); border:1px solid #302044; border-radius:14px; padding:13px 16px; }
+  .stat span { color:var(--muted); font-size:.82rem; display:block; }
+  .stat strong { display:block; font-size:1.25rem; margin-top:3px; }
+  .progress-shell { height:7px; background:#252039; border-radius:99px; overflow:hidden; margin-bottom:22px; }
+  #progress { height:100%; width:0%; background:linear-gradient(90deg,#a855f7,#e879f9); transition:width .2s; }
+  .layout { display:grid; grid-template-columns: minmax(0,1fr) 240px; gap:18px; align-items:start; }
+  .card { background:rgba(18,19,38,.96); border:1px solid #39214d; border-radius:20px; padding:clamp(18px,3vw,28px); box-shadow:0 16px 45px #0002; }
+  .qtop { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:17px; }
+  .pill { color:#e6c5ff; background:#2b1740; border:1px solid #4a2867; padding:6px 10px; border-radius:99px; font-size:.76rem; font-weight:700; }
+  #qnum { color:var(--muted); font-size:.9rem; }
+  #question { font-size:clamp(1.08rem,2.2vw,1.35rem); line-height:1.5; margin:0 0 22px; }
+  .options { display:grid; gap:11px; }
+  .option { width:100%; display:flex; align-items:flex-start; gap:12px; text-align:left; color:var(--text); background:#17182d; border:1px solid #34304b; border-radius:13px; padding:14px; cursor:pointer; font:inherit; line-height:1.45; transition:.15s; }
+  .option:hover { border-color:var(--purple); background:#211832; }
+  .option.selected { border-color:var(--purple); background:#2b1940; box-shadow:inset 0 0 0 1px #a855f755; }
+  .letter { flex:0 0 28px; height:28px; display:grid; place-items:center; border:1px solid #514064; border-radius:8px; color:#dfc5ff; font-weight:800; font-size:.8rem; }
+  .option.selected .letter { background:var(--purple); color:#190d25; border-color:var(--purple); }
+  .nav { display:flex; justify-content:space-between; gap:10px; margin-top:23px; }
+  .btn { border:1px solid #54316e; color:var(--text); background:#28183a; border-radius:11px; padding:11px 17px; cursor:pointer; font-weight:750; font-size:.9rem; }
+  .btn:hover:not(:disabled) { background:#39204f; }
+  .btn:disabled { opacity:.38; cursor:not-allowed; }
+  .btn.primary { color:#1a0b26; background:var(--purple); border-color:var(--purple); }
+  .btn.primary:hover { background:#d59bff; }
+  .side-title { margin:0 0 12px; font-size:1rem; }
+  .question-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .qdot { aspect-ratio:1; border:1px solid #39314d; border-radius:9px; background:#17182d; color:var(--muted); cursor:pointer; font-weight:700; }
+  .qdot.answered { color:#f3dfff; border-color:#7540a0; background:#2a1a3b; }
+  .qdot.current { outline:2px solid var(--purple); outline-offset:1px; }
+  .legend { margin-top:15px; color:var(--muted); font-size:.78rem; line-height:1.8; }
+  .legend i { display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;background:#7540a0; }
+  .legend .empty { background:#17182d;border:1px solid #39314d; }
+  .side-note { margin-top:17px; padding:12px; border-radius:12px; background:#1c172b; color:var(--muted); font-size:.82rem; line-height:1.5; }
+  .result { display:none; }
+  .result.show { display:block; }
+  .quiz.hide { display:none; }
+  .score-ring { width:126px;height:126px;border-radius:50%;border:7px solid #6e36a0;display:grid;place-items:center;margin:10px auto 18px;background:#21152f; }
+  .score-ring strong { font-size:2rem; }
+  .result h2 { text-align:center; margin:0; font-size:1.7rem; }
+  .result .lead { text-align:center;color:var(--muted);margin:8px 0 24px; }
+  .result-summary { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0 25px; }
+  .result-summary div { text-align:center;background:#1a1b30;border-radius:12px;padding:13px 8px; }
+  .result-summary strong { display:block;font-size:1.25rem; }
+  .result-summary span { color:var(--muted);font-size:.78rem; }
+  .review-item { border-top:1px solid #34304b;padding:17px 0; }
+  .review-item h3 { font-size:1rem;line-height:1.5;margin:0 0 10px; }
+  .review-item p { margin:7px 0;color:var(--muted);line-height:1.5;font-size:.9rem; }
+  .correct-text { color:var(--green)!important; }
+  .wrong-text { color:var(--red)!important; }
+  .hidden { display:none!important; }
+  @media(max-width:780px) { .layout{grid-template-columns:1fr}.sidebar{order:-1}.question-grid{grid-template-columns:repeat(10,1fr)}.side-note{display:none} }
+  @media(max-width:500px) { .stats{gap:7px}.stat{padding:10px}.stat strong{font-size:1rem}.question-grid{grid-template-columns:repeat(5,1fr)}.nav .btn{padding:10px 12px}.result-summary{gap:6px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">🤖</div>
+      <div><h1>AI Challenge Arena</h1><p class="subtitle">Advanced Artificial Intelligence • Competition Practice</p></div>
+    </div>
+    <div class="timer" aria-live="polite"><small>Time remaining</small><div id="time">10:00</div></div>
+  </header>
+
+  <section class="stats" aria-label="Quiz statistics">
+    <div class="stat"><span>Total questions</span><strong>20</strong></div>
+    <div class="stat"><span>Answered</span><strong id="answeredCount">0 / 20</strong></div>
+    <div class="stat"><span>Marks available</span><strong>20</strong></div>
+  </section>
+  <div class="progress-shell"><div id="progress"></div></div>
+
+  <main id="quiz" class="quiz layout">
+    <section class="card">
+      <div class="qtop"><span class="pill" id="topic">AI Foundations</span><span id="qnum">Question 1 of 20</span></div>
+      <h2 id="question"></h2>
+      <div id="options" class="options"></div>
+      <div class="nav">
+        <button class="btn" id="prevBtn" type="button">← Previous</button>
+        <button class="btn primary" id="nextBtn" type="button">Next →</button>
+        <button class="btn primary hidden" id="submitBtn" type="button">Submit quiz</button>
+      </div>
+    </section>
+    <aside class="card sidebar">
+      <h3 class="side-title">Question navigator</h3>
+      <div id="questionGrid" class="question-grid"></div>
+      <div class="legend"><div><i></i> Answered</div><div><i class="empty"></i> Not answered</div></div>
+      <div class="side-note">Choose the best answer for each question. You can revisit questions before submitting. The quiz submits automatically when the timer reaches zero.</div>
+      <button class="btn primary" id="sideSubmit" style="width:100%;margin-top:17px" type="button">Finish & submit</button>
+    </aside>
+  </main>
+
+  <section id="result" class="card result" aria-live="polite">
+    <div class="score-ring"><strong id="score">0/20</strong></div>
+    <h2 id="resultTitle">Quiz complete</h2>
+    <p class="lead" id="resultLead"></p>
+    <div class="result-summary">
+      <div><strong id="correctNum">0</strong><span>Correct</span></div>
+      <div><strong id="wrongNum">0</strong><span>Incorrect / skipped</span></div>
+      <div><strong id="percentNum">0%</strong><span>Percentage</span></div>
+    </div>
+    <h2 style="text-align:left;font-size:1.2rem;margin-bottom:8px">Answer review</h2>
+    <p class="subtitle" style="margin-bottom:10px">Review the correct answer and explanation for every question.</p>
+    <div id="review"></div>
+    <button class="btn primary" id="restartBtn" type="button">↻ Try again</button>
+  </section>
+</div>
+
+<script>
+const questions = [
+  {
+    topic:"AI Foundations",
+    q:"A system follows a fixed set of hand-written rules and cannot improve from examples. Which statement is most accurate?",
+    options:["It is necessarily machine learning because it automates a task.","It may be conventional AI software, but learning from data is not demonstrated.","It is artificial general intelligence because rules can be extensive.","It is unsupervised learning because no labels are required."],
+    answer:1,
+    explanation:"Machine learning involves fitting or adapting a model from data or experience. Rule-based automation alone does not establish that a system learns."
+  },
+  {
+    topic:"AI Foundations",
+    q:"Which statement best distinguishes narrow AI from artificial general intelligence (AGI)?",
+    options:["Narrow AI always uses neural networks; AGI uses only symbolic rules.","Narrow AI is software, while AGI must be a physical robot.","Narrow AI is built for a limited task or domain; AGI would generalize across a broad range of tasks.","Narrow AI cannot process language, while AGI can."],
+    answer:2,
+    explanation:"Narrow AI is task- or domain-specific. AGI describes a hypothetical broadly capable system; neither label is determined simply by whether the system is a robot or uses a neural network."
+  },
+  {
+    topic:"Machine Learning",
+    q:"A model scores 99% on training data but 68% on a separate test set. What is the most likely issue?",
+    options:["Underfitting, because the training score is too high.","Overfitting, because performance fails to generalize to unseen data.","Data normalization, which always causes test scores to fall.","Unsupervised learning, because the model has seen labels."],
+    answer:1,
+    explanation:"The large gap between training and test performance is a classic sign of overfitting. Validation strategy, regularization, data quality, and leakage should be investigated."
+  },
+  {
+    topic:"Machine Learning",
+    q:"A dataset contains house features and sale prices. The goal is to predict the price of a new house. Which task is this?",
+    options:["Supervised regression","Unsupervised clustering","Reinforcement learning","Association-rule mining"],
+    answer:0,
+    explanation:"Sale price is a labeled, continuous target, so predicting it from examples is supervised regression."
+  },
+  {
+    topic:"Machine Learning",
+    q:"A bank has millions of transactions but no fraud labels. It wants to group transactions by behavioral similarity for investigation. Which approach best matches the initial goal?",
+    options:["Supervised classification with fabricated labels","Unsupervised clustering or anomaly detection","Machine translation","A fixed sorting algorithm that guarantees fraud detection"],
+    answer:1,
+    explanation:"Without labeled outcomes, clustering can surface groups and anomaly detection can flag unusual patterns. Human review or later labels may be needed to determine actual fraud."
+  },
+  {
+    topic:"Machine Learning",
+    q:"Why should a preprocessing step such as feature scaling be fitted only on the training split?",
+    options:["To make every feature have a positive value.","To prevent information from the validation or test data leaking into model development.","To guarantee that the model has no bias.","Because test data must never be transformed."],
+    answer:1,
+    explanation:"Fit preprocessing parameters on training data only, then apply those parameters to validation/test data. This avoids leakage while still allowing consistent transformations."
+  },
+  {
+    topic:"Machine Learning",
+    q:"For a rare disease with a highly imbalanced dataset, why can accuracy be misleading?",
+    options:["Accuracy cannot be computed for classification tasks.","A model predicting the majority class for every case may achieve high accuracy while missing most positive cases.","Accuracy always equals precision.","Imbalanced data automatically makes the test set invalid."],
+    answer:1,
+    explanation:"When positives are rare, majority-class predictions can dominate the accuracy score. Recall, precision, F1, PR-AUC, and the real costs of errors can be more informative."
+  },
+  {
+    topic:"Machine Learning",
+    q:"In reinforcement learning, what is the main role of a reward signal?",
+    options:["It directly provides the correct action for every future state.","It measures the immediate or delayed desirability of outcomes and guides policy learning.","It replaces the environment and all observations.","It guarantees the globally optimal policy after one episode."],
+    answer:1,
+    explanation:"Rewards evaluate outcomes; an agent learns a policy to maximize expected cumulative reward. Rewards do not normally prescribe the correct action in every state."
+  },
+  {
+    topic:"Neural Networks",
+    q:"Why are nonlinear activation functions important in a deep neural network?",
+    options:["Without them, stacked linear layers collapse to a single linear transformation.","They ensure every model is interpretable.","They remove the need for training data.","They guarantee zero training error."],
+    answer:0,
+    explanation:"Compositions of linear transformations remain linear. Nonlinear activations allow networks to represent more complex nonlinear functions."
+  },
+  {
+    topic:"Neural Networks",
+    q:"What is the main purpose of backpropagation during neural-network training?",
+    options:["To randomly generate training labels.","To calculate gradients of the loss with respect to model parameters using the chain rule.","To choose the number of classes in the dataset.","To convert all inputs into natural language."],
+    answer:1,
+    explanation:"Backpropagation efficiently computes gradients through the network. An optimizer then uses those gradients to update parameters."
+  },
+  {
+    topic:"Natural Language Processing",
+    q:"In a Transformer, what does self-attention allow a token representation to do?",
+    options:["Attend to relevant representations of other tokens in the permitted context.","Guarantee that every token has equal importance.","Store the entire training dataset inside one token.","Replace tokenization and positional information in every architecture."],
+    answer:0,
+    explanation:"Self-attention computes context-dependent interactions among token representations. Attention weights need not be equal, and architecture details such as positional information still matter."
+  },
+  {
+    topic:"Natural Language Processing",
+    q:"A language model generates a confident answer containing a fabricated source. This is commonly described as:",
+    options:["Quantization","Hallucination","Clustering","Data augmentation"],
+    answer:1,
+    explanation:"A hallucination is generated content that is unsupported or incorrect, potentially including invented facts or citations. Fluent wording does not establish truth."
+  },
+  {
+    topic:"Natural Language Processing",
+    q:"What is a key benefit of retrieval-augmented generation (RAG)?",
+    options:["It guarantees every generated answer is true.","It lets a model retrieve relevant external passages and use them as context for generation.","It permanently changes the model weights whenever a document is retrieved.","It removes the need to evaluate retrieved sources."],
+    answer:1,
+    explanation:"RAG retrieves relevant information at answer time and supplies it as context. It can improve grounding, but retrieval quality and generated claims still require evaluation."
+  },
+  {
+    topic:"Robotics and AI",
+    q:"A mobile robot uses camera input to detect a pedestrian, lidar to estimate distance, and a controller to brake. This is best described as:",
+    options:["A complete AI system in which perception, sensor fusion and control can work together.","Unsupervised learning only, because multiple sensors are present.","Natural language processing, because the robot interprets a scene.","Proof that the robot has human-level intelligence."],
+    answer:0,
+    explanation:"Robotic autonomy often combines perception, sensor fusion, planning, and control. The presence of these components does not imply AGI."
+  },
+  {
+    topic:"Robotics and AI",
+    q:"Why is simulation-to-reality transfer a challenge for robots trained in simulation?",
+    options:["Simulators cannot represent any physical motion.","Differences in friction, sensors, lighting, timing, and dynamics can cause a policy to fail on real hardware.","A simulated robot always has fewer joints than a real robot.","Real robots cannot use learned policies."],
+    answer:1,
+    explanation:"The sim-to-real gap arises when simulated physics or observations differ from reality. Domain randomization, system identification, and real-world fine-tuning can help."
+  },
+  {
+    topic:"AI Ethics",
+    q:"A hiring model has different error rates across demographic groups. What is the most responsible next step?",
+    options:["Deploy immediately if overall accuracy is high.","Remove the demographic column and assume all bias is eliminated.","Audit data, outcomes and group-wise errors; assess context, fairness goals and legal requirements before deployment.","Hide the results because fairness cannot be measured."],
+    answer:2,
+    explanation:"Fairness assessment requires context-specific evaluation of data, outcomes, error rates, and applicable requirements. Removing one field alone may not remove proxy effects or historical bias."
+  },
+  {
+    topic:"AI Applications",
+    q:"A medical image model performs well at one hospital but poorly at another. Which explanation should be investigated first?",
+    options:["Distribution shift, such as differences in scanners, populations, protocols, or image processing.","The second hospital must have mislabeled every image.","The model has become AGI at the first hospital.","The software language used by the hospitals."],
+    answer:0,
+    explanation:"Performance can drop when deployment data differs from training data. External validation and investigation of domain shifts are essential before clinical use."
+  },
+  {
+    topic:"AI Safety",
+    q:"Which practice most directly reduces the risk of exposing sensitive information when using a third-party AI service?",
+    options:["Paste complete records so the model has more context.","Minimize and de-identify data where possible, verify the service's data policy, and use approved access controls.","Assume prompts are always private by default.","Use a longer prompt to hide identifying details."],
+    answer:1,
+    explanation:"Data minimization, de-identification, appropriate service agreements, and access controls reduce exposure. Sensitive data should not be shared based on assumptions about privacy."
+  },
+  {
+    topic:"Current AI Trends",
+    q:"What is a major technical benefit of quantizing a neural network for edge deployment?",
+    options:["It always increases accuracy without trade-offs.","It can reduce model memory and computation, often with a possible accuracy trade-off.","It converts a neural network into a database query.","It eliminates the need for a processor."],
+    answer:1,
+    explanation:"Quantization uses lower-precision representations to reduce storage and often improve inference efficiency. The effect on accuracy and speed depends on the model and hardware."
+  },
+  {
+    topic:"AI in Society",
+    q:"A city plans to use AI to optimize traffic signals. Which evaluation plan is strongest?",
+    options:["Measure only average speed during one quiet hour.","Deploy citywide immediately and compare anecdotes.","Run a controlled pilot and measure travel time, safety, pedestrian impacts, emissions, reliability, and performance across traffic conditions.","Use the number of model parameters as the main success metric."],
+    answer:2,
+    explanation:"A useful evaluation measures real-world outcomes and possible harms across varied conditions, ideally with a baseline or controlled pilot—not model size or anecdotes alone."
+  }
+];
+
+let current = 0;
+let answers = Array(questions.length).fill(null);
+let secondsLeft = 600;
+let timerId = null;
+let finished = false;
+
+const $ = id => document.getElementById(id);
+function renderGrid() {
+  const grid = $("questionGrid");
+  grid.innerHTML = "";
+  questions.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "qdot" + (answers[i] !== null ? " answered" : "") + (i === current ? " current" : "");
+    b.textContent = i + 1;
+    b.setAttribute("aria-label", `Go to question ${i + 1}${answers[i] !== null ? ", answered" : ", unanswered"}`);
+    b.addEventListener("click", () => { current = i; renderQuestion(); });
+    grid.appendChild(b);
+  });
+}
+function renderQuestion() {
+  const item = questions[current];
+  $("topic").textContent = item.topic;
+  $("qnum").textContent = `Question ${current + 1} of ${questions.length}`;
+  $("question").textContent = item.q;
+  const options = $("options");
+  options.innerHTML = "";
+  item.options.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "option" + (answers[current] === i ? " selected" : "");
+    b.setAttribute("aria-pressed", answers[current] === i ? "true" : "false");
+    const letter = document.createElement("span");
+    letter.className = "letter";
+    letter.textContent = String.fromCharCode(65 + i);
+    const text = document.createElement("span");
+    text.textContent = label;
+    b.append(letter, text);
+    b.addEventListener("click", () => {
+      if (finished) return;
+      answers[current] = i;
+      renderQuestion();
+      updateStats();
+    });
+    options.appendChild(b);
+  });
+  $("prevBtn").disabled = current === 0;
+  $("nextBtn").classList.toggle("hidden", current === questions.length - 1);
+  $("submitBtn").classList.toggle("hidden", current !== questions.length - 1);
+  renderGrid();
+  updateStats();
+}
+function updateStats() {
+  const count = answers.filter(a => a !== null).length;
+  $("answeredCount").textContent = `${count} / ${questions.length}`;
+  $("progress").style.width = `${count / questions.length * 100}%`;
+}
+function updateTimer() {
+  const m = Math.floor(secondsLeft / 60);
+  const s = secondsLeft % 60;
+  $("time").textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  $("time").classList.toggle("warning", secondsLeft <= 60);
+  if (secondsLeft <= 0) {
+    clearInterval(timerId);
+    submitQuiz(true);
+    return;
+  }
+  secondsLeft--;
+}
+function submitQuiz(auto = false) {
+  if (finished) return;
+  const unanswered = answers.filter(a => a === null).length;
+  if (!auto && unanswered > 0) {
+    const proceed = confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`);
+    if (!proceed) return;
+  }
+  finished = true;
+  clearInterval(timerId);
+  $("quiz").classList.add("hide");
+  $("result").classList.add("show");
+  const correct = questions.reduce((sum, q, i) => sum + (answers[i] === q.answer ? 1 : 0), 0);
+  const wrong = questions.length - correct;
+  const pct = Math.round(correct / questions.length * 100);
+  $("score").textContent = `${correct}/${questions.length}`;
+  $("correctNum").textContent = correct;
+  $("wrongNum").textContent = wrong;
+  $("percentNum").textContent = `${pct}%`;
+  $("resultTitle").textContent = pct >= 85 ? "Excellent performance!" : pct >= 65 ? "Good effort — keep sharpening your skills." : "Practice makes progress.";
+  $("resultLead").textContent = auto ? "Time expired. Your quiz was submitted automatically." : "Quiz submitted. Review each explanation to learn from your answers.";
+  const review = $("review");
+  review.innerHTML = "";
+  questions.forEach((q, i) => {
+    const div = document.createElement("article");
+    div.className = "review-item";
+    const h = document.createElement("h3");
+    h.textContent = `${i + 1}. ${q.q}`;
+    const your = document.createElement("p");
+    const yourAnswer = answers[i] === null ? "Not answered" : `${String.fromCharCode(65 + answers[i])}. ${q.options[answers[i]]}`;
+    your.textContent = `Your answer: ${yourAnswer}`;
+    your.className = answers[i] === q.answer ? "correct-text" : "wrong-text";
+    const right = document.createElement("p");
+    right.className = "correct-text";
+    right.textContent = `Correct answer: ${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer]}`;
+    const explain = document.createElement("p");
+    explain.textContent = `Explanation: ${q.explanation}`;
+    div.append(h, your, right, explain);
+    review.appendChild(div);
+  });
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+function startQuiz() {
+  current = 0;
+  answers = Array(questions.length).fill(null);
+  secondsLeft = 600;
+  finished = false;
+  $("quiz").classList.remove("hide");
+  $("result").classList.remove("show");
+  renderQuestion();
+  updateTimer();
+  clearInterval(timerId);
+  timerId = setInterval(updateTimer, 1000);
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+$("prevBtn").addEventListener("click", () => { if (current > 0) { current--; renderQuestion(); } });
+$("nextBtn").addEventListener("click", () => { if (current < questions.length - 1) { current++; renderQuestion(); } });
+$("submitBtn").addEventListener("click", () => submitQuiz(false));
+$("sideSubmit").addEventListener("click", () => submitQuiz(false));
+$("restartBtn").addEventListener("click", startQuiz);
+startQuiz();
+</script>
+</body>
+</html>
